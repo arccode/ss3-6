@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:security="http://www.springframework.org/schema/security"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+          http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+          http://www.springframework.org/schema/security
+          http://www.springframework.org/schema/security/spring-security-3.2.xsd">
+
+    <security:http pattern="/api/login-page" security="none"/>
+
+    <!-- 权限控制 -->
+    <security:http>
+        <security:form-login login-page="/api/login-page"
+                 login-processing-url="/login.do" username-parameter="username"
+                 password-parameter="password"
+                 authentication-success-handler-ref="authSuccess"
+                 authentication-failure-handler-ref="authFailure"/>
+
+        <!-- 拦截 -->
+        <!--<security:intercept-url pattern="/login.jsp" access="IS_AUTHENTICATED_ANONYMOUSLY"/>-->
+        <!--<security:intercept-url pattern="/**" access="ROLE_USER" />-->
+
+        <!-- 定制过滤链 -->
+        <security:custom-filter ref="myFilterSecurityInterceptor" before="FILTER_SECURITY_INTERCEPTOR"/>
+
+        <!-- 退出 -->
+        <security:logout logout-url="/j_spring_security_logout" logout-success-url="/api/login-page"/>
+    </security:http>
+
+    <!-- 认证管理 -->
+    <security:authentication-manager alias="authenticationManager">
+        <!-- 2. jdbcDaoImpl方式, 与jdbc方式相似 -->
+        <security:authentication-provider user-service-ref="myUserDetailsService">
+            <!-- 1. jdbc 方式-->
+            <!--<security:jdbc-user-service data-source-ref="dataSource"/>-->
+
+            <!-- 密码编码 MD5-->
+            <!--<security:password-encoder hash="md5"/>-->
+        </security:authentication-provider>
+    </security:authentication-manager>
+
+    <!-- 认证成功处理类 -->
+    <bean id="authSuccess" class="com.arccode.core.security.AuthenticationSuccessHandlerImpl" />
+
+    <!-- 认证失败处理类 -->
+    <bean id="authFailure" class="com.arccode.core.security.AuthenticationFailureHandlerImpl"/>
+
+    <!-- authentication-provider 的provider实例
+    <bean id="userDetailsService" class="org.springframework.security.core.userdetails.jdbc.JdbcDaoImpl">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>-->
+
+    <!-- 配置过滤器 -->
+    <bean id="myFilterSecurityInterceptor" class="com.arccode.core.security.MyFilterSecurityInterceptor">
+
+        <!-- 用户是否拥有所请求资源的权限 -->
+        <property name="accessDecisionManager" ref="myAccessDescisionManager" />
+
+        <!-- 资源与权限的对应关系 -->
+        <property name="fisMetadataSource" ref="mySecurityMetadataSource" />
+
+        <!-- 用户拥有的权限 -->
+        <property name="authenticationManager" ref="authenticationManager"/>
+
+    </bean>
+
+    <!-- 资源源数据定义 -->
+    <bean id="mySecurityMetadataSource" class="com.arccode.core.security.MySecurityMetadataSource">
+        <constructor-arg name="roleMapper" ref="roleMapper" />
+    </bean>
+
+
+</beans>
